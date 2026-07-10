@@ -5,9 +5,9 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
-  color: #e2e8f0;
-  background-color: #0b0c10;
+  color-scheme: light;
+  color: #1e293b; /* Dark slate text for readability */
+  background-color: #f8fafc; /* Crisp clean medical slate background */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -20,7 +20,8 @@ body {
   display: flex;
   min-width: 320px;
   min-height: 100vh;
-  background: radial-gradient(circle at top right, #1f1235, #0b0c10 60%);
+  /* Soft clinical ice-blue to white gradient */
+  background: radial-gradient(circle at top right, #e0f2fe, #f1f5f9 60%, #f8fafc 100%);
 }
 
 #root {
@@ -32,7 +33,7 @@ body {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -42,45 +43,47 @@ body {
 
 @keyframes pulse-border {
   0% {
-    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.4);
+    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.3);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(168, 85, 247, 0);
+    box-shadow: 0 0 0 8px rgba(14, 165, 233, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(168, 85, 247, 0);
+    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0);
   }
 }
 
-/* Custom UI Utilities */
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Translucent Medical Panel Card Style */
 .glass {
-  background: rgba(17, 20, 28, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(14, 165, 233, 0.12); /* Clean sky-blue border */
   border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.1), 0 8px 10px -6px rgba(148, 163, 184, 0.08);
 }
 
+/* Buttons */
 .btn-primary {
-  background: linear-gradient(135deg, #a855f7, #6366f1);
+  background: linear-gradient(135deg, #0ea5e9, #0284c7); /* Sky blue gradient */
   color: #ffffff;
   border: none;
   padding: 12px 24px;
   border-radius: 8px;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 15px;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(168, 85, 247, 0.45);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
 }
 
 .btn-primary:active {
@@ -88,25 +91,26 @@ body {
 }
 
 .btn-disabled {
-  background: #1e293b;
-  color: #64748b;
+  background: #cbd5e1;
+  color: #94a3b8;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* File Upload Zone */
 .upload-zone {
-  border: 2px dashed rgba(168, 85, 247, 0.3);
+  border: 2px dashed rgba(14, 165, 233, 0.25);
   border-radius: 16px;
   padding: 40px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: rgba(17, 20, 28, 0.4);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .upload-zone:hover {
-  border-color: #a855f7;
-  background: rgba(168, 85, 247, 0.05);
+  border-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.04);
   animation: pulse-border 1.5s infinite;
 }
 
@@ -114,7 +118,7 @@ body {
 .gauge-container {
   position: relative;
   height: 8px;
-  background: #1e293b;
+  background: #e2e8f0;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -131,8 +135,9 @@ body {
   width: 16px;
   height: 16px;
   background: #ffffff;
-  border: 3px solid #a855f7;
+  border: 3px solid #0ea5e9;
   border-radius: 50%;
   transform: translateX(-50%);
   transition: left 0.6s cubic-bezier(0.1, 0.8, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
