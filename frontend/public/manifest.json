@@ -1,0 +1,21 @@
+{
+  "short_name": "DiaScan",
+  "name": "Iris DiaScan Clinical AI",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f8fafc",
+  "theme_color": "#0ea5e9",
+  "display": "standalone",
+  "orientation": "portrait"
+}
