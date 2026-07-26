@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Eye, Activity, AlertTriangle, ShieldCheck, Heart, Clock, Download, ChevronRight, RefreshCw, BarChart2, Radio } from 'lucide-react';
+import { Upload, Eye, Activity, AlertTriangle, ShieldCheck, Heart, Clock, Download, ChevronRight, RefreshCw, BarChart2, Radio, CheckCircle, Sliders, Server, Cpu } from 'lucide-react';
 
 interface Prediction {
   sharpness: number;
@@ -107,7 +107,8 @@ function App() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [stepperIndex, setStepperIndex] = useState<number>(-1);
+  const [activeNodeIndex, setActiveNodeIndex] = useState<number>(-1);
+  const [selectedNodeDetails, setSelectedNodeDetails] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [referenceGlucose, setReferenceGlucose] = useState<number>(100);
@@ -122,13 +123,14 @@ function App() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const steps = [
-    '👁️ Grayscaling & applying pupil median filter...',
-    '🔍 Locating pupil and iris outer boundaries via Hough Circles...',
-    '🌐 Remapping polar coordinates (Daugman Rubber Sheet)...',
-    '🧬 Clipping pancreas sector ROI (270° - 324°)...',
-    '🧠 Running Stage 1 Classifier neural network...',
-    '🩸 Fetching Stage 2 Glucose Regressor predictions...'
+  // System Architecture Pipeline Nodes
+  const architectureNodes = [
+    { title: "Image Upload", desc: "Optic Scan Input", icon: Upload, details: "Accepts high-resolution close-up PNG/JPEG ocular captures." },
+    { title: "Quality Guard", desc: "Laplacian check", icon: ShieldCheck, details: "Calculates mathematical edge sharpness. Filters out blurry images." },
+    { title: "Daugman Remap", desc: "Segment & Unwarp", icon: Eye, details: "Hough Circles pupil tracking and polar rubber-sheet unwarping." },
+    { title: "Stage 1 CNN", desc: "Diabetes Classifier", icon: Cpu, details: "Deep Convolutional network runs binary classification check." },
+    { title: "Stage 2 CNN", desc: "Glucose Regressor", icon: Server, details: "Isolates Pancreas Sector ROI to estimate scalar blood sugar value." },
+    { title: "Clarke Grid", desc: "Clinical Report", icon: BarChart2, details: "Validates predictions against clinical limits and zone boundaries." }
   ];
 
   useEffect(() => {
@@ -144,12 +146,13 @@ function App() {
     };
   }, []);
 
+  // Simulating pipeline navigation flow
   useEffect(() => {
     if (loading) {
-      setStepperIndex(0);
+      setActiveNodeIndex(0);
       const timer = setInterval(() => {
-        setStepperIndex(prev => {
-          if (prev < steps.length - 1) {
+        setActiveNodeIndex(prev => {
+          if (prev < architectureNodes.length - 1) {
             return prev + 1;
           }
           clearInterval(timer);
@@ -167,6 +170,8 @@ function App() {
       setPreviewUrl(URL.createObjectURL(selected));
       setPrediction(null);
       setError(null);
+      setActiveNodeIndex(-1);
+      setSelectedNodeDetails(null);
     }
   };
 
@@ -182,13 +187,14 @@ function App() {
       setPreviewUrl(URL.createObjectURL(selected));
       setPrediction(null);
       setError(null);
+      setActiveNodeIndex(-1);
+      setSelectedNodeDetails(null);
     }
   };
 
   const runAnalysis = async () => {
     if (!file) return;
 
-    // Handle offline scan logging (PWA Offline Queue Mode)
     if (!isOnline) {
       const newScan = {
         name: file.name,
@@ -203,6 +209,7 @@ function App() {
     setLoading(true);
     setError(null);
     setPrediction(null);
+    setSelectedNodeDetails(null);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -243,7 +250,8 @@ function App() {
     setPreviewUrl(null);
     setPrediction(null);
     setError(null);
-    setStepperIndex(-1);
+    setActiveNodeIndex(-1);
+    setSelectedNodeDetails(null);
   };
 
   const getGlucoseColor = (val: number) => {
@@ -252,7 +260,6 @@ function App() {
     return '#0d9488'; // Teal
   };
 
-  // Helper for Digital Twin Simulator Visuals
   const getTwinOverlayStyle = () => {
     if (simulatorValue <= 120) {
       return { fill: 'rgba(16, 185, 129, 0.2)', stroke: '#10b981', label: 'Optimal reflex fibers. High tissue density.' };
@@ -275,6 +282,20 @@ function App() {
 
   const twinStyle = getTwinOverlayStyle();
 
+  // Dynamic Parameter Resolver for Interactive Diagram Nodes
+  const getNodeClinicalValue = (idx: number) => {
+    if (!prediction) return null;
+    switch(idx) {
+      case 0: return file?.name;
+      case 1: return `Sharpness: ${prediction.sharpness.toFixed(1)} (PASS)`;
+      case 2: return "Iris: Remapped (360° x 60)";
+      case 3: return `Sigmoid: ${prediction.diagnosis} (${(prediction.diabetes_probability * 100).toFixed(0)}%)`;
+      case 4: return prediction.diagnosis === 'Diabetic' ? `${prediction.estimated_glucose?.toFixed(0)} mg/dL (Regressor output)` : "Bypassed (Normal)";
+      case 5: return prediction.diagnosis === 'Diabetic' ? "Zone A / Zone B Plot Ready" : "Normal scan control";
+      default: return null;
+    }
+  };
+
   return (
     <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px 20px' }}>
       
@@ -291,7 +312,6 @@ function App() {
           </span>
         </div>
         
-        {/* PWA Connection & Queue Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {offlineQueue.length > 0 && isOnline && (
             <button 
@@ -361,7 +381,6 @@ function App() {
                 <Eye size={18} color="#0ea5e9" /> Optical Scan Interface
               </h3>
               
-              {/* Relative Image wrapper with SVG overlay */}
               <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', border: '1px solid rgba(14, 165, 233, 0.1)', background: '#f1f5f9', aspectRatio: '1/1' }}>
                 <img 
                   src={previewUrl} 
@@ -369,13 +388,11 @@ function App() {
                   style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
                 />
                 
-                {/* SVG Glowing Circles overlay (Daugman segmenter mock scale) */}
                 {prediction && (
                   <svg 
                     viewBox="0 0 300 300" 
                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
                   >
-                    {/* Detected Pupil Circle (Cyan) */}
                     <circle 
                       cx="150" 
                       cy="150" 
@@ -387,7 +404,6 @@ function App() {
                       style={{ filter: 'drop-shadow(0 2px 4px rgba(14, 165, 233, 0.3))' }}
                     />
                     
-                    {/* Detected Iris Circle (Purple Limbus) */}
                     <circle 
                       cx="150" 
                       cy="150" 
@@ -399,7 +415,6 @@ function App() {
                       style={{ filter: 'drop-shadow(0 2px 4px rgba(168, 85, 247, 0.3))' }}
                     />
                     
-                    {/* Digital Twin Pancreas Sector wedge path */}
                     <path 
                       d="M 150 118 L 150 58 A 92 92 0 0 1 215 85 L 172.6 127.4 A 32 32 0 0 0 150 118 Z" 
                       fill={twinStyle.fill} 
@@ -408,7 +423,6 @@ function App() {
                       style={{ transition: 'all 0.4s ease' }}
                     />
 
-                    {/* Annotations */}
                     <text x="175" y="70" fill={twinStyle.stroke} fontSize="8.5" fontWeight="bold" opacity="0.9">PANCREAS ROI</text>
                     <line x1="150" y1="150" x2="220" y2="150" stroke="rgba(15, 23, 42, 0.1)" strokeWidth="0.5" strokeDasharray="2 2" />
                     <line x1="150" y1="150" x2="150" y2="50" stroke="rgba(15, 23, 42, 0.1)" strokeWidth="0.5" strokeDasharray="2 2" />
@@ -464,138 +478,93 @@ function App() {
               </div>
             </div>
 
-            {/* Right Box: Processing logs / Prediction Cockpit */}
-            <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '400px', justifyContent: 'center' }}>
+            {/* Right Box: Live Pipeline Diagram Panel */}
+            <div className="glass" style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '400px', justifyContent: 'space-between' }}>
               
-              {/* Ready State */}
-              {!prediction && !loading && (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
-                  <Activity size={48} color="#0ea5e9" style={{ marginBottom: '16px', opacity: 0.5 }} />
-                  <h4 style={{ fontSize: '16px', color: '#0f172a', margin: '0 0 6px 0', fontWeight: 600 }}>Inference Panel Ready</h4>
-                  <p style={{ fontSize: '13px', margin: 0 }}>Upload image and click "Run Diagnostics" to scan raw eye features.</p>
-                </div>
-              )}
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 4px 0', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Server size={18} color="#0ea5e9" /> Interactive Pipeline Architecture
+                </h3>
+                <p style={{ margin: '0 0 16px 0', fontSize: '12px', color: '#64748b' }}>
+                  Click on completed nodes to review exact inputs/outputs processing logs.
+                </p>
 
-              {/* Advanced Stepper Loader */}
-              {loading && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px 10px' }} className="animate-fade-in">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <RefreshCw size={18} color="#0ea5e9" style={{ animation: 'spin 1.5s linear infinite' }} />
-                    <span style={{ color: '#0284c7', fontSize: '14px', fontWeight: 700 }}>Processing Scan Data...</span>
-                  </div>
-                  
-                  {/* Logs terminal */}
-                  <div style={{ background: '#f8fafc', border: '1px solid rgba(14, 165, 233, 0.12)', borderRadius: '8px', padding: '16px', minHeight: '160px', display: 'flex', flexDirection: 'column', gap: '10px', fontFamily: 'monospace', fontSize: '11.5px', color: '#334155' }}>
-                    {steps.slice(0, stepperIndex + 1).map((log, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', opacity: idx === stepperIndex ? 1 : 0.6 }} className="animate-fade-in">
-                        <ChevronRight size={12} color="#0ea5e9" />
-                        <span>{log}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Results Engine */}
-              {prediction && (
-                <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
-                  {/* Latency & Quality Metrics */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', borderBottom: '1px solid rgba(15, 23, 42, 0.05)', paddingBottom: '12px', fontWeight: 500 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Clock size={12} /> API Latency: {prediction.latency_ms.toFixed(1)} ms
-                    </span>
-                    <span>
-                      Blur Quality: {prediction.sharpness.toFixed(1)} (PASS)
-                    </span>
-                  </div>
-
-                  {/* Stage 1 Metrics */}
-                  <div>
-                    <h4 style={{ fontSize: '11px', textTransform: 'uppercase', color: '#64748b', margin: '0 0 8px 0', letterSpacing: '0.5px', fontWeight: 700 }}>
-                      Stage 1: Binary Classification Output
-                    </h4>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '19px', fontWeight: 700, color: '#0f172a' }}>
-                        {prediction.diagnosis === 'Diabetic' ? 'Diabetic Retinal Markers' : 'Non-Diabetic Control'}
-                      </span>
-                      <span style={{ 
-                        background: prediction.diagnosis === 'Diabetic' ? 'rgba(220, 38, 38, 0.08)' : 'rgba(13, 148, 136, 0.08)',
-                        color: prediction.diagnosis === 'Diabetic' ? '#dc2626' : '#0d9488',
-                        border: `1px solid ${prediction.diagnosis === 'Diabetic' ? 'rgba(220, 38, 38, 0.2)' : 'rgba(13, 148, 136, 0.2)'}`,
-                        padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase'
-                      }}>
-                        {prediction.diagnosis === 'Diabetic' ? 'Alert' : 'Normal'}
-                      </span>
-                    </div>
+                {/* Pipeline Node Map */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative' }}>
+                  {architectureNodes.map((node, idx) => {
+                    const isNodeCompleted = prediction || (loading && idx < activeNodeIndex);
+                    const isNodeActive = loading && idx === activeNodeIndex;
+                    const clinicalVal = getNodeClinicalValue(idx);
                     
-                    <div className="gauge-container" style={{ height: '6px' }}>
+                    const NodeIcon = node.icon;
+
+                    return (
                       <div 
-                        className="gauge-bar" 
+                        key={idx}
+                        onClick={() => isNodeCompleted && setSelectedNodeDetails(node.details + (clinicalVal ? `\nProcessed values: ${clinicalVal}` : ''))}
                         style={{ 
-                          width: `${prediction.diabetes_probability * 100}%`,
-                          background: prediction.diagnosis === 'Diabetic' ? '#dc2626' : '#0d9488'
-                        }} 
-                      />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b', marginTop: '6px', fontWeight: 500 }}>
-                      <span>Healthy Control (0.0)</span>
-                      <span>Classifier Confidence: {(prediction.diabetes_probability * 100).toFixed(1)}%</span>
-                      <span>Diabetic (1.0)</span>
-                    </div>
-                  </div>
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '12px', 
+                          padding: '10px 14px', 
+                          borderRadius: '8px',
+                          border: isNodeActive ? '1px solid #0ea5e9' : '1px solid rgba(15,23,42,0.06)',
+                          background: isNodeActive ? 'rgba(14, 165, 233, 0.04)' : (isNodeCompleted ? '#f8fafc' : 'rgba(15,23,42,0.01)'),
+                          cursor: isNodeCompleted ? 'pointer' : 'default',
+                          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                          boxShadow: isNodeActive ? '0 0 8px rgba(14, 165, 233, 0.25)' : 'none',
+                          transform: isNodeActive ? 'translateX(4px)' : 'none'
+                        }}
+                      >
+                        <div style={{ 
+                          width: '32px', 
+                          height: '32px', 
+                          borderRadius: '50%', 
+                          background: isNodeActive ? '#0ea5e9' : (isNodeCompleted ? '#e2fbf4' : '#f1f5f9'),
+                          display: 'flex', 
+                          justifyContent: 'center', 
+                          alignItems: 'center',
+                          color: isNodeActive ? '#ffffff' : (isNodeCompleted ? '#0d9488' : '#94a3b8')
+                        }}>
+                          {isNodeCompleted ? <CheckCircle size={18} /> : <NodeIcon size={16} />}
+                        </div>
 
-                  {/* Stage 2 Metrics */}
-                  {prediction.diagnosis === 'Diabetic' && prediction.estimated_glucose !== null ? (
-                    <div style={{ borderTop: '1px solid rgba(15, 23, 42, 0.05)', paddingTop: '16px' }}>
-                      <ClarkeErrorGrid 
-                        predicted={prediction.estimated_glucose} 
-                        reference={referenceGlucose} 
-                        onReferenceChange={setReferenceGlucose}
-                      />
-                    </div>
-                  ) : (
-                    <div style={{ borderTop: '1px solid rgba(15, 23, 42, 0.05)', paddingTop: '16px', background: 'rgba(13, 148, 136, 0.02)', border: '1px dashed rgba(13, 148, 136, 0.2)', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
-                      <ShieldCheck size={28} color="#0d9488" style={{ margin: '0 auto 8px auto' }} />
-                      <h5 style={{ margin: '0 0 4px 0', fontSize: '13px', color: '#0f172a', fontWeight: 600 }}>Screening Complete</h5>
-                      <p style={{ margin: 0, fontSize: '11px', color: '#64748b', lineHeight: 1.5 }}>
-                        Patient does not show diabetic indicators. Stage 2 regression pipeline bypassed.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Medical Advice Panel */}
-                  <div style={{ 
-                    background: 'rgba(15, 23, 42, 0.015)',
-                    border: '1px solid rgba(15, 23, 42, 0.04)',
-                    borderRadius: '10px',
-                    padding: '14px',
-                    fontSize: '13px',
-                    lineHeight: 1.5,
-                    color: '#334155',
-                    display: 'flex',
-                    gap: '12px',
-                    alignItems: 'flex-start'
-                  }}>
-                    <Heart size={16} color="#0ea5e9" style={{ marginTop: '2px', flexShrink: 0 }} />
-                    <div>
-                      <strong style={{ color: '#0f172a' }}>Clinical Action Plan</strong>
-                      <div style={{ marginTop: '4px', fontSize: '12px', color: '#475569' }}>
-                        {prediction.medical_advice}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: isNodeActive ? '#0ea5e9' : '#0f172a' }}>{node.title}</span>
+                            {clinicalVal && <span style={{ fontSize: '11px', color: '#0d9488', fontWeight: 500 }}>{clinicalVal}</span>}
+                          </div>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>{node.desc}</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Report Download */}
-                  <button 
-                    onClick={() => window.print()}
-                    style={{ background: 'rgba(15,23,42,0.02)', border: '1px solid rgba(15,23,42,0.08)', color: '#0f172a', borderRadius: '8px', padding: '10px 16px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', transition: 'all 0.2s', fontWeight: 600 }}
-                  >
-                    <Download size={14} /> Export Patient Report Sheet
-                  </button>
-
+                    );
+                  })}
                 </div>
+              </div>
+
+              {/* Node Details Overlay Panel */}
+              {selectedNodeDetails ? (
+                <div style={{ 
+                  marginTop: '16px', 
+                  background: '#f0f9ff', 
+                  border: '1px solid #bae6fd', 
+                  borderRadius: '8px', 
+                  padding: '12px',
+                  fontSize: '12.5px',
+                  color: '#0369a1',
+                  animation: 'fadeIn 0.2s ease-out'
+                }}>
+                  <div style={{ fontWeight: 700, marginBottom: '4px' }}>🔎 Inspecting Pipeline Step:</div>
+                  <div style={{ fontStyle: 'italic', color: '#0284c7' }}>{selectedNodeDetails}</div>
+                </div>
+              ) : (
+                prediction && (
+                  <div style={{ fontSize: '11.5px', color: '#64748b', textAlign: 'center', marginTop: '14px' }}>
+                    💡 Tap any step above to inspect its clinical diagnostic parameter logs.
+                  </div>
+                )
               )}
+
             </div>
 
           </div>
