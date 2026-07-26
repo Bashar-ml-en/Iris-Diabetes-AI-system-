@@ -57,6 +57,12 @@ class MockModel:
                 return np.array([[195.5]]) # Hyperglycemic
             return np.array([[98.5]])      # Normal
 
+# Resolve model paths relative to this file's directory to prevent CWD loading crashes
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+STAGE1_MODEL_PATH = os.path.join(BASE_DIR, 'stage1_diabetes_classifier.h5')
+STAGE2_MODEL_PATH = os.path.join(BASE_DIR, 'stage2_glucose_regressor.h5')
+
 # Global variables to hold loaded models
 stage1_model = None
 stage2_model = None
@@ -100,10 +106,10 @@ async def startup_event():
     if HAS_TENSORFLOW:
         # 1. Load Stage 1 Classifier (Binary)
         try:
-            stage1_model = tf.keras.models.load_model('stage1_diabetes_classifier.h5', compile=False)
+            stage1_model = tf.keras.models.load_model(STAGE1_MODEL_PATH, compile=False)
             logger.info("✅ Loaded Stage 1 Diabetes Classifier model from file.")
         except Exception as e:
-            logger.warning(f"Could not load stage1_diabetes_classifier.h5: {str(e)}. Compiling mock fallback...")
+            logger.warning(f"Could not load Stage 1 Classifier from {STAGE1_MODEL_PATH}: {str(e)}. Compiling mock fallback...")
             stage1_model = tf.keras.Sequential([
                 tf.keras.layers.Input(shape=(150, 150, 3)),
                 tf.keras.layers.Conv2D(16, (3, 3), activation='relu'),
@@ -116,10 +122,10 @@ async def startup_event():
             
         # 2. Load Stage 2 Regressor (Continuous)
         try:
-            stage2_model = tf.keras.models.load_model('stage2_glucose_regressor.h5', compile=False)
+            stage2_model = tf.keras.models.load_model(STAGE2_MODEL_PATH, compile=False)
             logger.info("✅ Loaded Stage 2 Glucose Regressor model from file.")
         except Exception as e:
-            logger.warning(f"Could not load stage2_glucose_regressor.h5: {str(e)}. Compiling mock fallback...")
+            logger.warning(f"Could not load Stage 2 Regressor from {STAGE2_MODEL_PATH}: {str(e)}. Compiling mock fallback...")
             stage2_model = tf.keras.Sequential([
                 tf.keras.layers.Input(shape=(150, 150, 3)),
                 tf.keras.layers.Conv2D(16, (3, 3), activation='relu'),

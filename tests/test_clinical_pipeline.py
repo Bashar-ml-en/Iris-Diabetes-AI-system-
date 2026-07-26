@@ -110,4 +110,5 @@ def test_predict_cascaded_flow_control(client):
     # Visualizer assertions
     assert data["unwrapped_strip_b64"].startswith("data:image/png;base64,")
     assert data["pancreas_roi_b64"].startswith("data:image/png;base64,")
+    assert data["saliency_map_b64"].startswith("data:image/png;base64,")
     assert data["latency_ms"] > 0
