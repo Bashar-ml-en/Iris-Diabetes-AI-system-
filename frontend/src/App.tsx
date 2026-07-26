@@ -125,6 +125,7 @@ function App() {
   const [offlineQueue, setOfflineQueue] = useState<Array<{ name: string; size: number; date: string }>>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // System Architecture Pipeline Nodes
   const architectureNodes = [
@@ -464,8 +465,7 @@ function App() {
               className="upload-zone" 
               onDragOver={handleDragOver}
               onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              style={{ padding: '50px 30px', border: '2px dashed rgba(14, 165, 233, 0.2)', borderRadius: '12px', background: 'rgba(255,255,255,0.4)', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s' }}
+              style={{ padding: '40px 30px', border: '2px dashed rgba(14, 165, 233, 0.2)', borderRadius: '12px', background: 'rgba(255,255,255,0.4)', textAlign: 'center', transition: 'all 0.3s' }}
             >
               <input 
                 type="file" 
@@ -474,13 +474,36 @@ function App() {
                 style={{ display: 'none' }}
                 accept="image/*"
               />
-              <Upload size={38} color="#0ea5e9" style={{ marginBottom: '12px', filter: 'drop-shadow(0 2px 6px rgba(14, 165, 233, 0.2))' }} />
+              <input 
+                type="file" 
+                ref={cameraInputRef} 
+                onChange={handleFileChange} 
+                style={{ display: 'none' }}
+                accept="image/*"
+                capture="environment"
+              />
+              <Upload size={34} color="#0ea5e9" style={{ marginBottom: '12px', filter: 'drop-shadow(0 2px 6px rgba(14, 165, 233, 0.2))' }} />
               <h4 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 6px 0', color: '#0f172a' }}>
                 Load Patient Iris Scan
               </h4>
-              <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>
-                Click to browse local folders or drag-and-drop a close-up photo of the eye.
+              <p style={{ color: '#64748b', fontSize: '13px', margin: '0 0 20px 0' }}>
+                Drag and drop your image here, or select one of the capture methods below:
               </p>
+              
+              <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => cameraInputRef.current?.click()}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '8px', border: '1px solid #0ea5e9', background: '#0ea5e9', color: '#ffffff', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 4px rgba(14, 165, 233, 0.15)' }}
+                >
+                  📷 Take Live Photo (Camera)
+                </button>
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '8px', border: '1px solid rgba(148, 163, 184, 0.25)', background: '#ffffff', color: '#475569', fontSize: '13px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}
+                >
+                  📁 Select from Gallery
+                </button>
+              </div>
             </div>
 
           </div>
