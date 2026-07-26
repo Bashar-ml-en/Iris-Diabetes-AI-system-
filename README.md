@@ -4,7 +4,7 @@ This repository contains the complete software architecture for an end-to-end, t
 
 This project successfully replicates the architectural concepts of state-of-the-art non-invasive glucose monitoring systems (such as EasyGlucose) by leveraging Topographical Iridology markers and Deep Convolutional Neural Networks (CNNs).
 
-## 🏗️ System Architecture
+## System Architecture
 
 The system is built as a **Two-Stage Cascaded Pipeline** to maximize clinical safety and computational efficiency.
 
@@ -21,7 +21,7 @@ The system is built as a **Two-Stage Cascaded Pipeline** to maximize clinical sa
 * **Loss Function:** Trained using **Mean Absolute Error (MAE)** to penalize large clinical deviations, optimizing for continuous scalar output rather than categorical buckets.
 * **Evaluation:** Clinical accuracy is measured using **Pearson Correlation** and plotted against a standard **Clarke Error Grid** (measuring predictions falling into safe Zones A and B).
 
-## 🚀 How to Run the System
+## How to Run the System
 
 The entire pipeline is wrapped in a beautiful, interactive web interface using Streamlit.
 
@@ -36,7 +36,7 @@ streamlit run streamlit_app.py
 ```
 This will launch a local web server. You can upload an image of an iris, and the system will pass it through the cascading pipeline, outputting the final clinical diagnosis and medical advice.
 
-## 🧬 Handling Dataset Limitations (Synthetic Data Generation)
+## Handling Dataset Limitations (Synthetic Data Generation)
 Currently, a public dataset containing paired images of human irises and their exact, simultaneous continuous glucose monitor (CGM) readings does not exist. 
 
 To overcome this and finalize the software architecture:
