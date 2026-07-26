@@ -21,21 +21,41 @@ This project has been upgraded from a simple Streamlit script into a high-perfor
 
 ## 🏗️ System Architecture
 
-The system is built as a **Two-Stage Cascaded Pipeline** to maximize clinical safety and computational efficiency:
+The screening pipeline is built as a **Two-Stage Cascaded Neural Network** integrated with an OpenCV ocular segmentation engine:
 
-```
-[Uploaded Scan] ➡️ [Quality Check] ➡️ [Daugman Unwarping] ➡️ [Stage 1 Classifier]
-                                                                  |
-                                              +-------------------+-------------------+
-                                              | (Confidence < 0.5)                    | (Confidence >= 0.5)
-                                              ▼                                       ▼
-                                     [Healthy: Halt Pipeline]             [Diabetic: Crop Pancreas ROI]
-                                                                                      |
-                                                                                      ▼
-                                                                          [Stage 2 Regressor]
-                                                                                      |
-                                                                                      ▼
-                                                                           [Glucose & Clarke Grid]
+```mermaid
+graph TB
+    %% Class Definitions for Theme
+    classDef preprocess fill:#e0f2fe,stroke:#0ea5e9,stroke-width:2px,color:#0369a1;
+    classDef cnn fill:#f3e8ff,stroke:#a855f7,stroke-width:2px,color:#6b21a8;
+    classDef clinical fill:#ccfbf1,stroke:#0d9488,stroke-width:2px,color:#115e59;
+    classDef gate fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#92400e;
+
+    subgraph "1. OCULAR PREPROCESSING ENGINE (OpenCV)"
+        A[Raw Iris Scan] --> B(Laplacian Filter)
+        B -->|Sharpness > 100| C(Hough Circle Transform)
+        B -->|Sharpness < 100| B_Err[Quality Gate Rejection]
+        C -->|Pupil & Limbus Centering| D(Daugman Polar Transform)
+        D -->|Normalized Iris Strip 360x60| E(Pancreas Sector Crop 270°-324°)
+    end
+
+    subgraph "2. CASCADED DEEP LEARNING SYSTEM"
+        E --> F[Stage 1 CNN Classifier]
+        F -->|Sigmoid Probability < 0.5| G{Clinical Gate}
+        F -->|Sigmoid Probability >= 0.5| H[Stage 2 CNN Regressor]
+    end
+
+    subgraph "3. CLINICAL EVALUATION & REPORTING"
+        G -->|Control| G_Out[Halt: Normal Screen advice]
+        H -->|Glucose mg/dL| I(Interactive Clarke Error Grid)
+        I --> J(PDF Clinical Report & Simulator Twin)
+    end
+
+    %% Apply Classes
+    class A,B,C,D,E preprocess;
+    class F,H cnn;
+    class I,J clinical;
+    class G,B_Err,G_Out gate;
 ```
 
 ### Stage 1: Binary Classification (Diabetes Detection)
