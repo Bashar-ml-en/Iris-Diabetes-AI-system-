@@ -102,17 +102,32 @@ def detect_pupil_and_iris(image: np.ndarray) -> tuple[tuple[int, int], int, int]
     
     if iris_circles is not None:
         iris_circles = np.uint16(np.around(iris_circles))
-        # Find circle closest to the pupil center
+        # Find circle closest to the pupil center that satisfies strict biological constraints
         min_dist = float('inf')
+        found_valid = False
         for circle in iris_circles[0]:
             cx, cy, r = circle
             dist = np.sqrt((cx - pupil_center[0])**2 + (cy - pupil_center[1])**2)
-            if dist < min_dist:
+            
+            # Biological constraints:
+            # 1. Iris radius must be between 2.2x and 3.8x the pupil radius.
+            # 2. Iris center must be closely concentric with the pupil center (within 10% of image width).
+            is_plausible_size = (2.2 * pupil_radius <= r <= 3.8 * pupil_radius)
+            is_concentric = (dist < w * 0.1)
+            
+            if is_plausible_size and is_concentric and dist < min_dist:
                 min_dist = dist
                 iris_radius = int(r)
-        logger.info(f"Iris detected with radius {iris_radius}")
+                found_valid = True
+                
+        if found_valid:
+            logger.info(f"Iris boundary validated at radius {iris_radius}")
+        else:
+            logger.warning("Hough iris circles found but failed biological checks. Defaulting to 3.0x multiplier.")
+            iris_radius = int(pupil_radius * 3.0)
     else:
         logger.warning("Hough Circles failed to detect iris boundary. Using default radius ratio.")
+        iris_radius = int(pupil_radius * 3.0)
         
     return pupil_center, pupil_radius, iris_radius
 
