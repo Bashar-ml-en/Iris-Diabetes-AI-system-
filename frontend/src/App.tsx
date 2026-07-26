@@ -13,7 +13,12 @@ interface Prediction {
   latency_ms: number;
 }
 
-const API_BASE_URL = 'http://localhost:8000';
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname;
+  return `http://${hostname}:8000`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // ----------------------------------------------------
 // Interactive Clarke Error Grid Component
