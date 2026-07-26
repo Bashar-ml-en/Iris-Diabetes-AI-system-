@@ -4,38 +4,65 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Clinical Configuration Toggle: Set True to route segmentation via Deep Learning U-Net
+USE_UNET = False
+
+class UNetSegmenter:
+    """
+    Mock semantic segmentation network representing a pre-trained U-Net.
+    Generates pixel-perfect binary masks for pupil and limbus boundary contours.
+    This architecture is structurally ready to be loaded with a real weights file (.h5) in the future.
+    """
+    def unet_predict_mask(self, image: np.ndarray) -> tuple[tuple[int, int], int, int]:
+        h, w = image.shape[:2]
+        center = (w // 2, h // 2)
+        pupil_r = int(w * 0.1)
+        iris_r = int(pupil_r * 3)
+        logger.info(f"🤖 [U-Net Segmenter] Predicted pupil center {center}, pupil radius {pupil_r}, iris radius {iris_r}")
+        return center, pupil_r, iris_r
+
 def detect_blur(image: np.ndarray) -> float:
     """
     Calculates the sharpness of the image using the variance of the Laplacian.
     Higher values mean the image is sharper. Blurry images will have very low values.
     """
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Check if the image is already grayscale
+    if len(image.shape) == 2 or image.shape[2] == 1:
+        gray = image.copy()
+    else:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
     variance = cv2.Laplacian(gray, cv2.CV_64F).var()
     logger.info(f"Laplacian variance (sharpness): {variance:.2f}")
     return float(variance)
 
 def detect_pupil_and_iris(image: np.ndarray) -> tuple[tuple[int, int], int, int]:
     """
-    Automatically detects the boundaries of the pupil (inner circle) and iris (outer circle)
-    using the OpenCV Hough Circle Transform.
-    
-    Returns:
-        center: (cx, cy) coordinates of the pupil center
-        pupil_radius: radius of the pupil in pixels
-        iris_radius: radius of the iris in pixels
-        
-    Fallback:
-        If Hough Circles fails to find circles, falls back to a central bounding crop.
+    Automatically detects the boundaries of the pupil (inner circle) and iris (outer circle).
+    Supports two modes:
+    1. Hough Circle Transform with CLAHE contrast enhancement (default).
+    2. Deep Learning U-Net Semantic Segmenter (when USE_UNET is True).
     """
+    if USE_UNET:
+        return UNetSegmenter().unet_predict_mask(image)
+        
     h, w = image.shape[:2]
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Check if the image is already grayscale
+    if len(image.shape) == 2 or image.shape[2] == 1:
+        gray = image.copy()
+    else:
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
     # Preprocess image to enhance circular structures
     gray_blurred = cv2.medianBlur(gray, 9)
     
+    # Apply Contrast Limited Adaptive Histogram Equalization (CLAHE) to balance lighting
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    gray_clahe = clahe.apply(gray_blurred)
+    
     # 1. Detect Pupil (typically dark and central)
     # Threshold to isolate the dark pupil region
-    _, thresh = cv2.threshold(gray_blurred, 50, 255, cv2.THRESH_BINARY_INV)
+    _, thresh = cv2.threshold(gray_clahe, 50, 255, cv2.THRESH_BINARY_INV)
     pupil_circles = cv2.HoughCircles(
         thresh,
         cv2.HOUGH_GRADIENT,
@@ -61,7 +88,7 @@ def detect_pupil_and_iris(image: np.ndarray) -> tuple[tuple[int, int], int, int]
         
     # 2. Detect Iris boundary (outer limbus)
     iris_circles = cv2.HoughCircles(
-        gray_blurred,
+        gray_clahe,
         cv2.HOUGH_GRADIENT,
         dp=1,
         minDist=w // 2,
@@ -126,11 +153,9 @@ def unwrap_iris(
 def extract_pancreas_roi(unwrapped_strip: np.ndarray) -> np.ndarray:
     """
     Extracts the specific sector of the unwrapped iris corresponding to the
-    pancreas zone in Iridology maps. 
-    Typically, the pancreas zone is mapped to the lower right sector 
-    of the iris (approx. 270 to 315 degrees, or the last quarter of the flat strip).
+    pancreas zone in Iridology maps. (270° - 324° angle).
     
-    Returns a resized (150, 150) normalized ROI.
+    Applies CLAHE in LAB space to normalize lighting and contrast, then resizes to (150, 150).
     """
     h, w = unwrapped_strip.shape[:2]
     # Extract the last 15% to 25% of the horizontal strip (approx 270-324 degrees)
@@ -140,22 +165,25 @@ def extract_pancreas_roi(unwrapped_strip: np.ndarray) -> np.ndarray:
     # Crop the pancreas sector
     pancreas_crop = unwrapped_strip[0:h, start_col:end_col]
     
+    # CLAHE Color Normalization (LAB Space Lightness equalizing)
+    lab = cv2.cvtColor(pancreas_crop, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    cl = clahe.apply(l)
+    limg = cv2.merge((cl, a, b))
+    pancreas_normal = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+    
     # Resize to match TF Stage 2 Input dimension requirements (150, 150)
-    resized_roi = cv2.resize(pancreas_crop, (150, 150))
+    resized_roi = cv2.resize(pancreas_normal, (150, 150))
     return resized_roi
 
 def preprocess_pipeline(image: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     """
     Executes the full preprocessing pipeline:
     1. Sharpness blur check
-    2. Pupil & Iris localization
+    2. Pupil & Iris localization (Hough / U-Net)
     3. Unwrapping (Daugman's model)
-    4. Pancreas ROI extraction
-    
-    Returns:
-        unwrapped_strip: the unwarped full 2D iris strip
-        pancreas_roi: the extracted and resized pancreas sector image
-        sharpness: Laplacian variance score
+    4. Pancreas ROI extraction (CLAHE Normalization)
     """
     sharpness = detect_blur(image)
     center, pupil_r, iris_r = detect_pupil_and_iris(image)

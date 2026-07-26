@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Eye, Activity, AlertTriangle, ShieldCheck, Heart, Clock, Download, ChevronRight, RefreshCw, BarChart2, Radio, CheckCircle, Server, Cpu, HelpCircle, AlertCircle } from 'lucide-react';
+import { Upload, Eye, Activity, AlertTriangle, ShieldCheck, Heart, Clock, Download, ChevronRight, RefreshCw, BarChart2, Radio, CheckCircle, Server, Cpu, HelpCircle, AlertCircle, Info } from 'lucide-react';
 
 interface Prediction {
   sharpness: number;
@@ -113,6 +113,9 @@ function App() {
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [referenceGlucose, setReferenceGlucose] = useState<number>(100);
   
+  // Interactive Capture Guidelines State
+  const [showCaptureGuide, setShowCaptureGuide] = useState<boolean>(false);
+  
   // XAI & Digital Twin States
   const [showAttention, setShowAttention] = useState<boolean>(true);
   const [simulatorValue, setSimulatorValue] = useState<number>(100);
@@ -214,7 +217,6 @@ function App() {
     formData.append('file', file);
 
     try {
-      // Set a 10 second timeout for fetch
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000);
 
@@ -408,6 +410,53 @@ function App() {
                 </ul>
               </div>
 
+            </div>
+
+            {/* Interactive Alignment Guide Drawer */}
+            <div style={{ border: '1px solid rgba(14, 165, 233, 0.15)', borderRadius: '12px', background: 'rgba(14, 165, 233, 0.01)', padding: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Info size={16} color="#0ea5e9" /> Clinical Photo Quality Guide
+                </span>
+                <button 
+                  onClick={() => setShowCaptureGuide(!showCaptureGuide)}
+                  style={{ background: 'transparent', border: 'none', color: '#0ea5e9', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  {showCaptureGuide ? '[ Hide Guide ]' : '[ Show Alignment Diagram ]'}
+                </button>
+              </div>
+
+              {showCaptureGuide && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: '16px', animation: 'fadeIn 0.3s ease-out' }}>
+                  
+                  {/* Schematic circular target simulation vector */}
+                  <div style={{ display: 'flex', justifyContent: 'center', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid rgba(14,165,233,0.1)' }}>
+                    <svg viewBox="0 0 150 150" style={{ width: '120px', height: '120px' }}>
+                      <circle cx="75" cy="75" r="50" fill="#cbd5e1" />
+                      <circle cx="75" cy="75" r="48" stroke="#a855f7" strokeWidth="1.5" strokeDasharray="3 2" fill="none" />
+                      <circle cx="75" cy="75" r="16" fill="#1e293b" />
+                      <circle cx="75" cy="75" r="16" stroke="#0ea5e9" strokeWidth="1.5" strokeDasharray="3 2" fill="none" />
+                      <path d="M 75 59 A 16 16 0 0 1 86 64 L 109 41 A 50 50 0 0 1 110 50 Z" fill="rgba(168,85,247,0.25)" stroke="#a855f7" strokeWidth="0.5" />
+                    </svg>
+                  </div>
+
+                  <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <span style={{ color: '#0ea5e9', fontWeight: 700 }}>● Pupil Guide:</span>
+                      <span>Center the pupil inside the inner cyan tracker.</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <span style={{ color: '#a855f7', fontWeight: 700 }}>● Limbus Guide:</span>
+                      <span>Ensure the outer iris ring maps to the purple tracker.</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <span style={{ color: '#64748b', fontWeight: 700 }}>● Pancreas Sector:</span>
+                      <span>Keep lower-right quadrant free of glare/reflections.</span>
+                    </div>
+                  </div>
+
+                </div>
+              )}
             </div>
 
             {/* Interactive Dropzone Uploader */}
