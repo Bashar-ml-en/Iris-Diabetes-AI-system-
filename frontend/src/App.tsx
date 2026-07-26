@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Eye, Activity, AlertTriangle, ShieldCheck, Heart, Clock, Download, ChevronRight, RefreshCw, BarChart2, Radio, CheckCircle, Sliders, Server, Cpu } from 'lucide-react';
+import { Upload, Eye, Activity, AlertTriangle, ShieldCheck, Heart, Clock, Download, ChevronRight, RefreshCw, BarChart2, Radio, CheckCircle, Server, Cpu, HelpCircle, AlertCircle } from 'lucide-react';
 
 interface Prediction {
   sharpness: number;
@@ -146,7 +146,6 @@ function App() {
     };
   }, []);
 
-  // Simulating pipeline navigation flow
   useEffect(() => {
     if (loading) {
       setActiveNodeIndex(0);
@@ -215,10 +214,17 @@ function App() {
     formData.append('file', file);
 
     try {
+      // Set a 10 second timeout for fetch
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
       const response = await fetch(`${API_BASE_URL}/predict`, {
         method: 'POST',
         body: formData,
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errDetail = await response.json();
@@ -232,7 +238,13 @@ function App() {
         setSimulatorValue(Math.round(data.estimated_glucose));
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during analysis.');
+      console.error(err);
+      if (err.name === 'AbortError') {
+        setError('Network timeout. Please check if your FastAPI backend server is running locally on port 8000.');
+      } else {
+        setError(err.message || 'Cannot connect to backend. Please ensure uvicorn is running at http://localhost:8000.');
+      }
+      setActiveNodeIndex(-1);
     } finally {
       setLoading(false);
     }
@@ -255,9 +267,9 @@ function App() {
   };
 
   const getGlucoseColor = (val: number) => {
-    if (val > 180) return '#dc2626'; // Red
-    if (val > 120) return '#ea580c'; // Orange
-    return '#0d9488'; // Teal
+    if (val > 180) return '#dc2626'; 
+    if (val > 120) return '#ea580c'; 
+    return '#0d9488'; 
   };
 
   const getTwinOverlayStyle = () => {
@@ -282,7 +294,6 @@ function App() {
 
   const twinStyle = getTwinOverlayStyle();
 
-  // Dynamic Parameter Resolver for Interactive Diagram Nodes
   const getNodeClinicalValue = (idx: number) => {
     if (!prediction) return null;
     switch(idx) {
@@ -290,8 +301,8 @@ function App() {
       case 1: return `Sharpness: ${prediction.sharpness.toFixed(1)} (PASS)`;
       case 2: return "Iris: Remapped (360° x 60)";
       case 3: return `Sigmoid: ${prediction.diagnosis} (${(prediction.diabetes_probability * 100).toFixed(0)}%)`;
-      case 4: return prediction.diagnosis === 'Diabetic' ? `${prediction.estimated_glucose?.toFixed(0)} mg/dL (Regressor output)` : "Bypassed (Normal)";
-      case 5: return prediction.diagnosis === 'Diabetic' ? "Zone A / Zone B Plot Ready" : "Normal scan control";
+      case 4: return prediction.diagnosis === 'Diabetic' ? `${prediction.estimated_glucose?.toFixed(0)} mg/dL` : "Bypassed";
+      case 5: return prediction.diagnosis === 'Diabetic' ? "Zone A / Zone B Plot Ready" : "Normal control";
       default: return null;
     }
   };
@@ -341,34 +352,88 @@ function App() {
       {/* Main Container */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '30px' }} className="animate-fade-in">
         
-        {/* Upload Zone */}
+        {/* Sleek Welcoming & System Scope Page (Shown when no image is uploaded) */}
         {!previewUrl && (
-          <div 
-            className="glass upload-zone animate-fade-in" 
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            style={{ padding: '80px 40px', position: 'relative', overflow: 'hidden' }}
-          >
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              style={{ display: 'none' }}
-              accept="image/*"
-            />
-            <Upload size={52} color="#0ea5e9" style={{ marginBottom: '18px', filter: 'drop-shadow(0 4px 10px rgba(14, 165, 233, 0.25))' }} />
-            <h2 style={{ fontSize: '24px', fontWeight: 600, margin: '0 0 8px 0', color: '#0f172a' }}>
-              Load Patient Iris Scan
-            </h2>
-            <p style={{ color: '#475569', fontSize: '15px', maxWidth: '480px', margin: '0 auto 24px auto', lineHeight: 1.6 }}>
-              Drag and drop high-resolution close-ups of the iris ring, or click to browse local folders.
-            </p>
-            <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', color: '#64748b', fontSize: '12px', fontWeight: 500 }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><ShieldCheck size={14} color="#0ea5e9" /> PWA Standalone app enabled</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><ShieldCheck size={14} color="#0ea5e9" /> Offline caching active</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><ShieldCheck size={14} color="#0ea5e9" /> Limbus boundary mapping</span>
+          <div className="glass animate-fade-in" style={{ padding: '36px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+            
+            {/* Header Welcome banner */}
+            <div style={{ textAlign: 'center', borderBottom: '1px solid rgba(14, 165, 233, 0.1)', paddingBottom: '24px' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(14,165,233,0.06)', padding: '6px 16px', borderRadius: '30px', border: '1px solid rgba(14,165,233,0.12)', color: '#0284c7', fontSize: '12px', fontWeight: 700, marginBottom: '16px' }}>
+                <Activity size={14} /> AI-Powered Non-Invasive Diagnostics Portal
+              </div>
+              <h1 style={{ fontSize: '32px', fontWeight: 700, margin: '0 0 10px 0', color: '#0f172a', letterSpacing: '-0.75px' }}>
+                Welcome to Iris DiaScan Workspace
+              </h1>
+              <p style={{ color: '#475569', fontSize: '15px', maxWidth: '640px', margin: '0 auto', lineHeight: 1.6 }}>
+                Inspect topographical reflex zones of the human iris to classify diabetic markers and estimate glycemic trends non-invasively using cascaded neural networks.
+              </p>
             </div>
+
+            {/* Scope / Capabilities split panels */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+              
+              {/* Card 1: What it does */}
+              <div style={{ background: '#f8fafc', border: '1px solid rgba(15,23,42,0.05)', borderRadius: '12px', padding: '20px' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 700, margin: '0 0 12px 0', color: '#0369a1' }}>
+                  <Eye size={18} /> System Scope & Mechanics
+                </h3>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '8px', lineHeight: 1.5 }}>
+                  <li><strong>Cascaded Gating</strong>: Splits diagnosis into binary detection (Stage 1) and value regression (Stage 2) for maximum efficiency.</li>
+                  <li><strong>Optical Mapping</strong>: Emulates Daugman's model by unwarping circular irises into flat rectangular strips to align anatomical structures.</li>
+                </ul>
+              </div>
+
+              {/* Card 2: Capabilities */}
+              <div style={{ background: '#f0fdf4', border: '1px solid rgba(22,163,74,0.08)', borderRadius: '12px', padding: '20px' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 700, margin: '0 0 12px 0', color: '#15803d' }}>
+                  <CheckCircle size={18} /> System Capabilities (CAN DO)
+                </h3>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px', color: '#3f6212', display: 'flex', flexDirection: 'column', gap: '8px', lineHeight: 1.5 }}>
+                  <li>Locate boundaries of the pupil and outer limbus automatically.</li>
+                  <li>Check image sharpness variance to reject blurry/unfocused scans.</li>
+                  <li>Provide real-time interactive Clarke Error Grid plots for glucose levels.</li>
+                  <li>Simulate tissue variations in the reflex zone (Digital Twin).</li>
+                </ul>
+              </div>
+
+              {/* Card 3: Limitations */}
+              <div style={{ background: '#fff7ed', border: '1px solid rgba(234,88,12,0.08)', borderRadius: '12px', padding: '20px' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: 700, margin: '0 0 12px 0', color: '#c2410c' }}>
+                  <AlertTriangle size={18} /> Clinical Boundaries (CANNOT DO)
+                </h3>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px', color: '#7c2d12', display: 'flex', flexDirection: 'column', gap: '8px', lineHeight: 1.5 }}>
+                  <li>Does NOT replace professional clinical blood draws or CGM trackers.</li>
+                  <li>Cannot process low-resolution or dark/occluded iris photography.</li>
+                  <li>Stage 2 Regressor is a mock blueprint (requires clinical calibration dataset).</li>
+                </ul>
+              </div>
+
+            </div>
+
+            {/* Interactive Dropzone Uploader */}
+            <div 
+              className="upload-zone" 
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+              style={{ padding: '50px 30px', border: '2px dashed rgba(14, 165, 233, 0.2)', borderRadius: '12px', background: 'rgba(255,255,255,0.4)', textAlign: 'center', cursor: 'pointer', transition: 'all 0.3s' }}
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                style={{ display: 'none' }}
+                accept="image/*"
+              />
+              <Upload size={38} color="#0ea5e9" style={{ marginBottom: '12px', filter: 'drop-shadow(0 2px 6px rgba(14, 165, 233, 0.2))' }} />
+              <h4 style={{ fontSize: '18px', fontWeight: 600, margin: '0 0 6px 0', color: '#0f172a' }}>
+                Load Patient Iris Scan
+              </h4>
+              <p style={{ color: '#64748b', fontSize: '13px', margin: 0 }}>
+                Click to browse local folders or drag-and-drop a close-up photo of the eye.
+              </p>
+            </div>
+
           </div>
         )}
 
@@ -431,8 +496,8 @@ function App() {
               </div>
 
               {error && (
-                <div style={{ background: 'rgba(220, 38, 38, 0.05)', border: '1px solid rgba(220, 38, 38, 0.15)', color: '#dc2626', borderRadius: '8px', padding: '12px', fontSize: '13px', display: 'flex', gap: '8px', alignItems: 'center', fontWeight: 500 }}>
-                  <AlertTriangle size={16} />
+                <div style={{ background: 'rgba(220, 38, 38, 0.05)', border: '1px solid rgba(220, 38, 38, 0.15)', color: '#dc2626', borderRadius: '8px', padding: '12px', fontSize: '13px', display: 'flex', gap: '8px', alignItems: 'flex-start', fontWeight: 500 }}>
+                  <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
                   <span>{error}</span>
                 </div>
               )}
@@ -465,8 +530,17 @@ function App() {
                   className={`btn-primary ${loading ? 'btn-disabled' : ''}`}
                   style={{ flex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
                 >
-                  <Activity size={18} />
-                  {loading ? 'Processing...' : 'Run Diagnostics'}
+                  {loading ? (
+                    <>
+                      <RefreshCw size={18} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Activity size={18} />
+                      <span>Run Diagnostics</span>
+                    </>
+                  )}
                 </button>
                 <button 
                   onClick={resetScanner} 
@@ -501,7 +575,7 @@ function App() {
                     return (
                       <div 
                         key={idx}
-                        onClick={() => isNodeCompleted && setSelectedNodeDetails(node.details + (clinicalVal ? `\nProcessed values: ${clinicalVal}` : ''))}
+                        onClick={() => isNodeCompleted && setSelectedNodeDetails(node.details + (clinicalVal ? `\n\nProcessed values: ${clinicalVal}` : ''))}
                         style={{ 
                           display: 'flex', 
                           alignItems: 'center', 
@@ -532,7 +606,7 @@ function App() {
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '13px', fontWeight: 600, color: isNodeActive ? '#0ea5e9' : '#0f172a' }}>{node.title}</span>
-                            {clinicalVal && <span style={{ fontSize: '11px', color: '#0d9488', fontWeight: 500 }}>{clinicalVal}</span>}
+                            {clinicalVal && <span style={{ fontSize: '11px', color: '#0d9488', fontWeight: 700 }}>{clinicalVal}</span>}
                           </div>
                           <span style={{ fontSize: '11px', color: '#64748b' }}>{node.desc}</span>
                         </div>
@@ -554,8 +628,8 @@ function App() {
                   color: '#0369a1',
                   animation: 'fadeIn 0.2s ease-out'
                 }}>
-                  <div style={{ fontWeight: 700, marginBottom: '4px' }}>🔎 Inspecting Pipeline Step:</div>
-                  <div style={{ fontStyle: 'italic', color: '#0284c7' }}>{selectedNodeDetails}</div>
+                  <div style={{ fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}><HelpCircle size={14} /> Node Inspection Log:</div>
+                  <div style={{ fontStyle: 'italic', color: '#0284c7', whiteSpace: 'pre-line' }}>{selectedNodeDetails}</div>
                 </div>
               ) : (
                 prediction && (
